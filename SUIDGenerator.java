@@ -48,7 +48,7 @@ public class SUIDGenerator implements Serializable {
 
         if (period > this.period) {
             this.period = period;
-            this.sequence = 0;
+            this.sequence = this.sequence % 2 != 0 ? 0 : 1;
         } else {
             this.sequence = ++this.sequence & MAXIMUM_SEQUENCE;
             if (this.sequence == 0) {
