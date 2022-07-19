@@ -56,7 +56,6 @@ public class SUIDGenerator implements Serializable {
                 long nextTime = this.landmark + this.period * TIME_STEP;
                 long currentTimeMillis;
                 while ((currentTimeMillis = System.currentTimeMillis()) < nextTime) {
-                    // Tolerate some clock backoff.
                     if (nextTime - currentTimeMillis > CLOCK_OUTLIER_THRESHOLD) {
                         throw new RuntimeException(String.format(
                                 "LowerIPv4: %s, InstanceId: %s, NextElapsedTime: %s [%s], CurrentTime: %s [%s], ClockOutliers: %sms",
