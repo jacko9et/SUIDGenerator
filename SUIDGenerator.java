@@ -42,6 +42,11 @@ public class SUIDGenerator {
     private long period;
     private long sequence;
 
+    /**
+     * Generate new id
+     *
+     * @return new id
+     */
     public synchronized long nextId() {
         long period = getPeriod(System.currentTimeMillis());
 
@@ -81,16 +86,21 @@ public class SUIDGenerator {
         return period;
     }
 
-    public SUIDGenerator() {
-        this(DEFAULT_LANDMARK_YEAR);
+    /**
+     * @param lastTimestamp To prevent clock rollback when the instance is not running,
+     *                      provide the last elapsed time when the instance was last running.
+     */
+    public SUIDGenerator(long lastTimestamp) {
+        this(DEFAULT_LANDMARK_YEAR, lastTimestamp);
     }
 
-    public SUIDGenerator(int year) {
-        this(year, getInstanceIdByPrivateIP(), 0);
-    }
-
-    public SUIDGenerator(long instanceId) {
-        this(DEFAULT_LANDMARK_YEAR, instanceId, 0);
+    /**
+     * @param year          A landmark year.
+     * @param lastTimestamp To prevent clock rollback when the instance is not running,
+     *                      provide the last elapsed time when the instance was last running.
+     */
+    public SUIDGenerator(int year, long lastTimestamp) {
+        this(year, getInstanceIdByPrivateIP(), lastTimestamp);
     }
 
     /**
@@ -161,15 +171,18 @@ public class SUIDGenerator {
         return (instanceId >> 8) + "." + (instanceId & 255);
     }
 
+    public long getInstanceId() {
+        return instanceId;
+    }
+
     public static void main(String[] args) {
         System.out.println(getInstanceIdByPrivateIP());
-        SUIDGenerator suidGenerator = new SUIDGenerator();
-        System.out.println(getLowerIPv4ByInstanceId(suidGenerator.instanceId));
+        SUIDGenerator suidGenerator = new SUIDGenerator(0);
+        System.out.println(getLowerIPv4ByInstanceId(suidGenerator.getInstanceId()));
         for (int i = 0; i < 10; i++) {
             System.out.println(suidGenerator.nextId());
         }
         System.out.println("=================================");
-        suidGenerator = new SUIDGenerator(0L);
         long time = (System.currentTimeMillis() / TIME_STEP - 1) * TIME_STEP + 1000;
         long count = 0;
         while (System.currentTimeMillis() <= time) {
