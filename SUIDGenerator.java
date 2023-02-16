@@ -24,7 +24,7 @@ import java.util.Calendar;
  * @since 1.0
  */
 public class SUIDGenerator {
-    
+
     private static final long INSTANCE_ID_BITS = Long.toUnsignedString(255 * 255, 2).length();
     private static final long SEQUENCE_BITS = Long.toUnsignedString(255, 2).length();
     private static final long PERIOD_BITS = Long.SIZE - INSTANCE_ID_BITS - SEQUENCE_BITS - 1;
@@ -170,9 +170,13 @@ public class SUIDGenerator {
         }
         System.out.println("=================================");
         suidGenerator = new SUIDGenerator(0L);
-        for (int i = 0; i < 10; i++) {
-            System.out.println(suidGenerator.nextId());
+        long time = (System.currentTimeMillis() / TIME_STEP - 1) * TIME_STEP + 1000;
+        long count = 0;
+        while (System.currentTimeMillis() <= time) {
+            suidGenerator.nextId();
+            count++;
         }
+        System.out.println(count);
     }
 
 }
