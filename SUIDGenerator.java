@@ -1,7 +1,5 @@
 package com.example.generator;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.net.*;
 import java.time.Instant;
 import java.util.Calendar;
@@ -25,9 +23,8 @@ import java.util.Calendar;
  * @author Jack
  * @since 1.0
  */
-public class SUIDGenerator implements Serializable {
-    @Serial
-    private static final long serialVersionUID = -1L;
+public class SUIDGenerator {
+    
     private static final long INSTANCE_ID_BITS = Long.toUnsignedString(255 * 255, 2).length();
     private static final long SEQUENCE_BITS = Long.toUnsignedString(255, 2).length();
     private static final long PERIOD_BITS = Long.SIZE - INSTANCE_ID_BITS - SEQUENCE_BITS - 1;
@@ -82,12 +79,18 @@ public class SUIDGenerator implements Serializable {
         return period;
     }
 
+    private static final int DEFAULT_LANDMARK_YEAR = 2022;
+
     public SUIDGenerator() {
-        this(2022);
+        this(DEFAULT_LANDMARK_YEAR);
     }
 
     public SUIDGenerator(int year) {
         this(year, getInstanceIdByPrivateIP(), 0);
+    }
+
+    public SUIDGenerator(long instanceId) {
+        this(DEFAULT_LANDMARK_YEAR, instanceId, 0);
     }
 
     /**
@@ -98,7 +101,7 @@ public class SUIDGenerator implements Serializable {
      */
     public SUIDGenerator(int year, long instanceId, long lastTimestamp) {
         int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-        int landmarkYear = 2022;
+        int landmarkYear = DEFAULT_LANDMARK_YEAR;
         if (year <= currentYear && year > landmarkYear) {
             landmarkYear = year;
         }
@@ -162,6 +165,11 @@ public class SUIDGenerator implements Serializable {
         System.out.println(getInstanceIdByPrivateIP());
         SUIDGenerator suidGenerator = new SUIDGenerator();
         System.out.println(getLowerIPv4ByInstanceId(suidGenerator.instanceId));
+        for (int i = 0; i < 10; i++) {
+            System.out.println(suidGenerator.nextId());
+        }
+        System.out.println("=================================");
+        suidGenerator = new SUIDGenerator(0L);
         for (int i = 0; i < 10; i++) {
             System.out.println(suidGenerator.nextId());
         }
