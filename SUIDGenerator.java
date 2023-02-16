@@ -25,6 +25,8 @@ import java.util.Calendar;
  */
 public class SUIDGenerator {
 
+    private static final int DEFAULT_LANDMARK_YEAR = 2022;
+
     private static final long INSTANCE_ID_BITS = Long.toUnsignedString(255 * 255, 2).length();
     private static final long SEQUENCE_BITS = Long.toUnsignedString(255, 2).length();
     private static final long PERIOD_BITS = Long.SIZE - INSTANCE_ID_BITS - SEQUENCE_BITS - 1;
@@ -78,8 +80,6 @@ public class SUIDGenerator {
         }
         return period;
     }
-
-    private static final int DEFAULT_LANDMARK_YEAR = 2022;
 
     public SUIDGenerator() {
         this(DEFAULT_LANDMARK_YEAR);
