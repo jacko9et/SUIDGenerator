@@ -23,9 +23,7 @@ import java.util.Calendar;
  * @author Jack
  * @since 1.0
  */
-public class SUIDGenerator {
-
-    private static final int DEFAULT_LANDMARK_YEAR = 2022;
+public final class SUIDGenerator {
 
     private static final long INSTANCE_ID_BITS = Long.toUnsignedString(255 * 255, 2).length();
     private static final long SEQUENCE_BITS = Long.toUnsignedString(255, 2).length();
@@ -61,9 +59,9 @@ public class SUIDGenerator {
                 long currentTimeMillis;
                 while ((currentTimeMillis = System.currentTimeMillis()) < nextTime) {
                     if (nextTime - currentTimeMillis > CLOCK_OUTLIER_THRESHOLD) {
-                        throw new RuntimeException(String.format(
-                                "LowerIPv4: %s, InstanceId: %s, NextElapsedTime: %s [%s], CurrentTime: %s [%s], ClockOutliers: %sms",
-                                getLowerIPv4ByInstanceId(instanceId),
+                        throw new IllegalStateException(String.format(
+                                "IPv4: %s, InstanceId: %s, NextElapsedTime: %s [%s], CurrentTime: %s [%s], ClockOutliers: %sms",
+                                getIPString(getIPv4()),
                                 this.instanceId, nextTime, Instant.ofEpochMilli(nextTime),
                                 currentTimeMillis, Instant.ofEpochMilli(currentTimeMillis),
                                 nextTime - currentTimeMillis));
@@ -80,27 +78,10 @@ public class SUIDGenerator {
     private long getPeriod(long currentTimeMillis) {
         long period = (currentTimeMillis - this.landmark) / TIME_STEP;
         if (period > MAXIMUM_PERIOD) {
-            throw new RuntimeException(String.format("Over the time limit, The last time is: %s",
+            throw new IllegalStateException(String.format("Over the time limit, The last time is: %s",
                     Instant.ofEpochMilli(MAXIMUM_PERIOD * TIME_STEP + this.landmark).toString()));
         }
         return period;
-    }
-
-    /**
-     * @param lastTimestamp To prevent clock rollback when the instance is not running,
-     *                      provide the last elapsed time when the instance was last running.
-     */
-    public SUIDGenerator(long lastTimestamp) {
-        this(DEFAULT_LANDMARK_YEAR, lastTimestamp);
-    }
-
-    /**
-     * @param year          A landmark year.
-     * @param lastTimestamp To prevent clock rollback when the instance is not running,
-     *                      provide the last elapsed time when the instance was last running.
-     */
-    public SUIDGenerator(int year, long lastTimestamp) {
-        this(year, getInstanceIdByPrivateIP(), lastTimestamp);
     }
 
     /**
@@ -111,18 +92,20 @@ public class SUIDGenerator {
      */
     public SUIDGenerator(int year, long instanceId, long lastTimestamp) {
         int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-        int landmarkYear = DEFAULT_LANDMARK_YEAR;
-        if (year <= currentYear && year > landmarkYear) {
-            landmarkYear = year;
+        if (year > currentYear) {
+            throw new IllegalArgumentException("The year cannot be larger than the current year.");
         }
-        this.landmark = new Calendar.Builder()
-                .setDate(landmarkYear, 1, 1)
-                .setTimeOfDay(0, 0, 0, 0)
-                .build().getTimeInMillis();
-
+        this.landmark = getLandmark(year);
         checkInstanceId(instanceId);
         this.instanceId = instanceId;
         this.period = getPeriod(lastTimestamp);
+    }
+
+    private static long getLandmark(int year) {
+        return new Calendar.Builder()
+                .setDate(year, 1, 1)
+                .setTimeOfDay(0, 0, 0, 0)
+                .build().getTimeInMillis();
     }
 
     private static void checkInstanceId(long instanceId) {
@@ -154,42 +137,53 @@ public class SUIDGenerator {
         }
     }
 
+    private static String getIPString(long[] ip) {
+        return ip[0] + "." + ip[1] + "." + ip[2] + "." + ip[3];
+    }
+
     public static long getInstanceIdByPrivateIP() {
         long[] ip = getIPv4();
         if (!isPrivateIP(ip)) {
-            StringBuilder builder = new StringBuilder();
-            builder.append(ip[0]).append(".")
-                    .append(ip[1]).append(".")
-                    .append(ip[2]).append(".")
-                    .append(ip[3]);
-            throw new RuntimeException(String.format("%s is not a private ip.", builder));
+            throw new IllegalStateException(String.format("%s is not a private ip.", getIPString(ip)));
         }
         return (ip[2] << 8) + ip[3];
     }
 
-    public static String getLowerIPv4ByInstanceId(long instanceId) {
+    public static long resolvePeriod(long id) {
+        return id >> PERIOD_LEFT_SHIFT_BITS & ~(-1L << PERIOD_BITS);
+    }
+
+    public static Instant resolveInstant(int year, long id) {
+        return Instant.ofEpochMilli(getLandmark(year) + resolvePeriod(id) * TIME_STEP);
+    }
+
+    public static LocalDateTime resolveLocalDateTime(int year, long id) {
+        return LocalDateTime.ofInstant(resolveInstant(year, id), ZoneId.systemDefault());
+    }
+
+    public static long resolveInstanceId(long id) {
+        return id >> SEQUENCE_BITS & ~(-1L << INSTANCE_ID_BITS);
+    }
+
+    public static String resolveLowerIPv4(long instanceId) {
         return (instanceId >> 8) + "." + (instanceId & 255);
     }
 
-    public long getInstanceId() {
-        return instanceId;
+    public static long resolveSequence(long id) {
+        return id & ~(-1L << SEQUENCE_BITS);
     }
 
     public static void main(String[] args) {
-        System.out.println(getInstanceIdByPrivateIP());
-        SUIDGenerator suidGenerator = new SUIDGenerator(0);
-        System.out.println(getLowerIPv4ByInstanceId(suidGenerator.getInstanceId()));
-        for (int i = 0; i < 10; i++) {
-            System.out.println(suidGenerator.nextId());
-        }
-        System.out.println("=================================");
-        long time = (System.currentTimeMillis() / TIME_STEP - 1) * TIME_STEP + 1000;
-        long count = 0;
-        while (System.currentTimeMillis() <= time) {
-            suidGenerator.nextId();
-            count++;
-        }
-        System.out.println(count);
+        SUIDGenerator suidGenerator = new SUIDGenerator(
+                2022,
+                SUIDGenerator.getInstanceIdByPrivateIP(),
+                System.currentTimeMillis());
+        long id = suidGenerator.nextId();
+        System.out.println(id);
+        System.out.println(resolveLocalDateTime(2022, id));
+        System.out.println(resolveLowerIPv4(resolveInstanceId(id)));
+        System.out.println(resolveInstanceId(id));
+        System.out.println(resolveSequence(id));
     }
 
 }
