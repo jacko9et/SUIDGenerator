@@ -96,7 +96,7 @@ public final class SUIDGenerator {
     public SUIDGenerator(int landmarkYear, long instanceId, long lastTimestamp) {
         int currentYear = Calendar.getInstance().get(Calendar.YEAR);
         if (landmarkYear > currentYear) {
-            throw new IllegalArgumentException("The year cannot be larger than the current year.");
+            throw new IllegalArgumentException("The landmarkYear cannot be larger than the current year.");
         }
         landmark = getLandmark(landmarkYear);
         checkInstanceId(instanceId);
