@@ -155,12 +155,12 @@ public final class SUIDGenerator {
         return id >> PERIOD_LEFT_SHIFT_BITS & ~(-1L << PERIOD_BITS);
     }
 
-    public static Instant resolveInstant(int year, long id) {
-        return Instant.ofEpochMilli(getLandmark(year) + resolvePeriod(id) * TIME_STEP);
+    public static Instant resolveInstant(int landmarkYear, long id) {
+        return Instant.ofEpochMilli(getLandmark(landmarkYear) + resolvePeriod(id) * TIME_STEP);
     }
 
-    public static LocalDateTime resolveLocalDateTime(int year, long id) {
-        return LocalDateTime.ofInstant(resolveInstant(year, id), ZoneId.systemDefault());
+    public static LocalDateTime resolveLocalDateTime(int landmarkYear, long id) {
+        return LocalDateTime.ofInstant(resolveInstant(landmarkYear, id), ZoneId.systemDefault());
     }
 
     public static long resolveInstanceId(long id) {
