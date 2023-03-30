@@ -52,19 +52,20 @@ public final class SUIDGenerator {
 
         if (period > this.period) {
             this.period = period;
-            this.sequence = this.sequence % 2 != 0 ? 0 : 1;
+            sequence = sequence % 2 != 0 ? 0 : 1;
         } else {
-            this.sequence = ++this.sequence & MAXIMUM_SEQUENCE;
-            if (this.sequence == 0) {
+            sequence = ++sequence & MAXIMUM_SEQUENCE;
+            if (sequence == 0) {
                 ++this.period;
-                long nextTime = this.landmark + this.period * TIME_STEP;
+                long nextTime = landmark + this.period * TIME_STEP;
                 long currentTimeMillis;
                 while ((currentTimeMillis = System.currentTimeMillis()) < nextTime) {
                     if (nextTime - currentTimeMillis > CLOCK_OUTLIER_THRESHOLD) {
                         throw new IllegalStateException(String.format(
                                 "IPv4: %s, InstanceId: %s, NextElapsedTime: %s [%s], CurrentTime: %s [%s], ClockOutliers: %sms",
                                 getIPString(getIPv4()),
-                                this.instanceId, nextTime, Instant.ofEpochMilli(nextTime),
+                                instanceId,
+                                nextTime, Instant.ofEpochMilli(nextTime),
                                 currentTimeMillis, Instant.ofEpochMilli(currentTimeMillis),
                                 nextTime - currentTimeMillis));
                     }
@@ -73,39 +74,39 @@ public final class SUIDGenerator {
         }
 
         return (this.period << PERIOD_LEFT_SHIFT_BITS)
-                | (this.instanceId << SEQUENCE_BITS)
-                | this.sequence;
+                | (instanceId << SEQUENCE_BITS)
+                | sequence;
     }
 
     private long getPeriod(long currentTimeMillis) {
-        long period = (currentTimeMillis - this.landmark) / TIME_STEP;
+        long period = (currentTimeMillis - landmark) / TIME_STEP;
         if (period > MAXIMUM_PERIOD) {
             throw new IllegalStateException(String.format("Over the time limit, The last time is: %s",
-                    Instant.ofEpochMilli(MAXIMUM_PERIOD * TIME_STEP + this.landmark).toString()));
+                    Instant.ofEpochMilli(MAXIMUM_PERIOD * TIME_STEP + landmark).toString()));
         }
         return period;
     }
 
     /**
-     * @param year          A landmark year.
+     * @param landmarkYear  A landmark year.
      * @param instanceId    Instance IDs that can work concurrently at the same time.
      * @param lastTimestamp To prevent clock rollback when the instance is not running,
      *                      provide the last elapsed time when the instance was last running.
      */
-    public SUIDGenerator(int year, long instanceId, long lastTimestamp) {
+    public SUIDGenerator(int landmarkYear, long instanceId, long lastTimestamp) {
         int currentYear = Calendar.getInstance().get(Calendar.YEAR);
-        if (year > currentYear) {
+        if (landmarkYear > currentYear) {
             throw new IllegalArgumentException("The year cannot be larger than the current year.");
         }
-        this.landmark = getLandmark(year);
+        landmark = getLandmark(landmarkYear);
         checkInstanceId(instanceId);
         this.instanceId = instanceId;
-        this.period = getPeriod(lastTimestamp);
+        period = getPeriod(lastTimestamp);
     }
 
-    private static long getLandmark(int year) {
+    private static long getLandmark(int landmarkYear) {
         return new Calendar.Builder()
-                .setDate(year, 1, 1)
+                .setDate(landmarkYear, 1, 1)
                 .setTimeOfDay(0, 0, 0, 0)
                 .build().getTimeInMillis();
     }
