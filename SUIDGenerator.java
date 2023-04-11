@@ -90,10 +90,8 @@ public final class SUIDGenerator {
     /**
      * @param landmarkYear  A landmark year.
      * @param instanceId    Instance IDs that can work concurrently at the same time.
-     * @param lastTimestamp To prevent clock rollback when the instance is not running,
-     *                      provide the last elapsed time when the instance was last running.
      */
-    public SUIDGenerator(int landmarkYear, long instanceId, long lastTimestamp) {
+    public SUIDGenerator(int landmarkYear, long instanceId) {
         int currentYear = Calendar.getInstance().get(Calendar.YEAR);
         if (landmarkYear > currentYear) {
             throw new IllegalArgumentException("The landmarkYear cannot be larger than the current year.");
@@ -101,7 +99,6 @@ public final class SUIDGenerator {
         landmark = getLandmark(landmarkYear);
         checkInstanceId(instanceId);
         this.instanceId = instanceId;
-        period = getPeriod(lastTimestamp);
     }
 
     private static long getLandmark(int landmarkYear) {
@@ -179,8 +176,7 @@ public final class SUIDGenerator {
     public static void main(String[] args) {
         SUIDGenerator suidGenerator = new SUIDGenerator(
                 2022,
-                SUIDGenerator.getInstanceIdByPrivateIP(),
-                System.currentTimeMillis());
+                SUIDGenerator.getInstanceIdByPrivateIP());
         long id = suidGenerator.nextId();
         System.out.println(id);
         System.out.println(resolveLocalDateTime(2022, id));
