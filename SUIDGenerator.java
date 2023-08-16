@@ -88,10 +88,19 @@ public final class SUIDGenerator {
     }
 
     /**
-     * @param landmarkYear  A landmark year.
-     * @param instanceId    Instance IDs that can work concurrently at the same time.
+     * @param landmarkYear A landmark year.
+     * @param instanceId   Instance IDs that can work concurrently at the same time.
      */
     public SUIDGenerator(int landmarkYear, long instanceId) {
+        this(landmarkYear, instanceId, System.currentTimeMillis());
+    }
+
+    /**
+     * @param landmarkYear A landmark year.
+     * @param instanceId   Instance IDs that can work concurrently at the same time.
+     * @param ntpTimestamp NTP Timestamp
+     */
+    public SUIDGenerator(int landmarkYear, long instanceId, long ntpTimestamp) {
         int currentYear = Calendar.getInstance().get(Calendar.YEAR);
         if (landmarkYear > currentYear) {
             throw new IllegalArgumentException("The landmarkYear cannot be larger than the current year.");
@@ -99,6 +108,7 @@ public final class SUIDGenerator {
         landmark = getLandmark(landmarkYear);
         checkInstanceId(instanceId);
         this.instanceId = instanceId;
+        period = getPeriod(Math.max(System.currentTimeMillis(), ntpTimestamp));
     }
 
     private static long getLandmark(int landmarkYear) {
